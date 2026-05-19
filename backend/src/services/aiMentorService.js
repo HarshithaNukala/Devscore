@@ -65,7 +65,7 @@ Your response must be valid JSON matching this schema exactly.
     return JSON.parse(text);
   } catch (error) {
     console.error('Gemini API Error:', error);
-    throw new Error('Failed to analyze profile with Gemini AI. Ensure your API key is correct.');
+    throw new Error(`Failed to analyze profile with Gemini AI: ${error.message || error}`);
   }
 }
 
