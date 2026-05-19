@@ -3,6 +3,7 @@ import { Moon, Sun, Code2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DevScoreForm from './components/DevScoreForm';
 import DevScoreResult from './components/DevScoreResult';
+import CinematicParticles from './components/CinematicParticles';
 import './index.css';
 
 function App() {
@@ -69,6 +70,7 @@ function App() {
 
   return (
     <div className="app-layout">
+      <CinematicParticles />
       <nav className="navbar">
         <div className="nav-brand">
           <Code2 size={24} />
