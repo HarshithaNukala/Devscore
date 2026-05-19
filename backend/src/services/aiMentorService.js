@@ -8,7 +8,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 async function getMentorAnalysis(githubData, targetRole) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY_HERE') {
-    throw new Error('Please configure your GEMINI_API_KEY in the backend/.env file.');
+    throw new Error('Gemini API key is not configured. Locally, add GEMINI_API_KEY to your backend/.env file. In production, add it as a Vercel Environment Variable under Project Settings.');
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
