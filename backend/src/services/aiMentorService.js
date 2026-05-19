@@ -1,4 +1,5 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const axios = require('axios');
 
 /**
  * Perform a deep, mentor-level analysis of the user's GitHub profile and repositories against their target role
@@ -6,18 +7,12 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
  * @param {string} targetRole - Target role selected by the user
  */
 async function getMentorAnalysis(githubData, targetRole) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY_HERE') {
-    throw new Error('Gemini API key is not configured. Locally, add GEMINI_API_KEY to your backend/.env file. In production, add it as a Vercel Environment Variable under Project Settings.');
-  }
+  const geminiApiKey = process.env.GEMINI_API_KEY;
+  const openaiApiKey = process.env.OPENAI_API_KEY;
 
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ 
-    model: "gemini-2.5-flash",
-    generationConfig: {
-      responseMimeType: "application/json"
-    }
-  });
+  if (!geminiApiKey && !openaiApiKey) {
+    throw new Error('No AI API key is configured. Please add either GEMINI_API_KEY or OPENAI_API_KEY to your backend/.env file. In production, add it as a Vercel Environment Variable under Project Settings.');
+  }
 
   const prompt = `
 You are an expert GitHub profile auditor and elite software engineering career mentor. 
@@ -59,13 +54,61 @@ Provide your analysis in the following strict JSON format:
 Your response must be valid JSON matching this schema exactly.
 `;
 
-  try {
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    return JSON.parse(text);
-  } catch (error) {
-    console.error('Gemini API Error:', error);
-    throw new Error(`Failed to analyze profile with Gemini AI: ${error.message || error}`);
+  // 1. Try OpenAI if key is present
+  if (openaiApiKey && openaiApiKey !== 'YOUR_OPENAI_API_KEY_HERE') {
+    try {
+      console.log('Performing analysis using OpenAI (gpt-4o-mini)...');
+      const response = await axios.post(
+        'https://api.openai.com/v1/chat/completions',
+        {
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'user', content: prompt }
+          ],
+          response_format: { type: 'json_object' }
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${openaiApiKey}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 30000
+        }
+      );
+
+      const text = response.data.choices[0].message.content;
+      return JSON.parse(text);
+    } catch (error) {
+      const errorMessage = error.response?.data?.error?.message || error.message;
+      console.error('OpenAI API Error:', errorMessage);
+      
+      // Fallback to Gemini if available
+      if (geminiApiKey) {
+        console.warn('OpenAI failed. Falling back to Gemini...');
+      } else {
+        throw new Error(`OpenAI analysis failed: ${errorMessage}`);
+      }
+    }
+  }
+
+  // 2. Try Gemini
+  if (geminiApiKey) {
+    try {
+      console.log('Performing analysis using Google Gemini...');
+      const genAI = new GoogleGenerativeAI(geminiApiKey);
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-2.5-flash",
+        generationConfig: {
+          responseMimeType: "application/json"
+        }
+      });
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
+      return JSON.parse(text);
+    } catch (error) {
+      console.error('Gemini API Error:', error);
+      throw new Error(`Failed to analyze profile with Gemini AI: ${error.message || error}`);
+    }
   }
 }
 
