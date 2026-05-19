@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { Moon, Sun, Code2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import DevScoreForm from './components/DevScoreForm';
 import DevScoreResult from './components/DevScoreResult';
 import './index.css';
@@ -66,29 +68,67 @@ function App() {
   };
 
   return (
-    <div className="app-container">
-      <button 
-        className="theme-toggle" 
-        onClick={toggleTheme}
-        aria-label="Toggle theme"
-      >
-        {theme === 'dark' ? '☀️' : '🌙'}
-      </button>
+    <div className="app-layout">
+      <nav className="navbar">
+        <div className="nav-brand">
+          <Code2 size={24} />
+          <span>DevScore</span>
+        </div>
+        <button 
+          className="theme-toggle-btn" 
+          onClick={toggleTheme}
+          aria-label="Toggle theme"
+        >
+          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
+      </nav>
 
-      <div className="header">
-        <h1>DevScore</h1>
-        <p>Analyze your GitHub profile against your dream role</p>
-      </div>
-
-      <div className="card">
-        {error && <div className="error-message">{error}</div>}
-        
-        {!result ? (
-          <DevScoreForm onAnalyze={handleAnalyze} loading={loading} />
-        ) : (
-          <DevScoreResult result={result} onReset={handleReset} />
-        )}
-      </div>
+      <main className="main-content">
+        <AnimatePresence mode="wait">
+          {!result ? (
+            <motion.div 
+              key="form"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.4 }}
+              style={{ width: '100%', maxWidth: '480px' }}
+            >
+              <h1 className="hero-title">Discover your<br/>engineering archetype.</h1>
+              <p className="hero-subtitle">
+                AI-powered analysis of your GitHub profile. See how you stack up against industry-standard roles.
+              </p>
+              
+              <div className="glass-card">
+                {error && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }} 
+                    animate={{ opacity: 1, height: 'auto' }} 
+                    className="error-banner"
+                  >
+                    <span>{error}</span>
+                  </motion.div>
+                )}
+                <DevScoreForm onAnalyze={handleAnalyze} loading={loading} />
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div 
+              key="result"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              style={{ width: '100%' }}
+            >
+              <DevScoreResult result={result} onReset={handleReset} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
+      
+      <footer className="footer">
+        <p>© {new Date().getFullYear()} DevScore. Built for the modern developer.</p>
+      </footer>
     </div>
   );
 }

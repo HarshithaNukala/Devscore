@@ -1,8 +1,8 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { fetchGithubData } = require('./src/services/githubService');
-const { calculateScore } = require('./src/services/scoringService');
-const { analyzeGap } = require('./src/services/gapAnalysisService');
+const { getMentorAnalysis } = require('./src/services/aiMentorService');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -20,16 +20,13 @@ app.post('/api/analyze', async (req, res) => {
   }
 
   try {
-    // 1. Fetch data from GitHub
+    // 1. Fetch data from GitHub (including rich repo context)
     const githubData = await fetchGithubData(username);
 
-    // 2. Calculate score
-    const score = calculateScore(githubData);
+    // 2. Perform AI Mentor analysis using Google Gemini
+    const aiAnalysis = await getMentorAnalysis(githubData, targetRole);
 
-    // 3. Role-based gap analysis
-    const gapAnalysis = analyzeGap(githubData.languages, targetRole);
-
-    // Return the response
+    // Return the response matching the frontend dashboard expectations
     res.json({
       name: name || githubData.name,
       username,
@@ -37,8 +34,13 @@ app.post('/api/analyze', async (req, res) => {
       bio: githubData.bio,
       languagesBreakdown: githubData.languagesBreakdown,
       targetRole,
-      score,
-      ...gapAnalysis
+      publicRepos: githubData.publicRepos,
+      followers: githubData.followers,
+      score: aiAnalysis.score,
+      strengths: aiAnalysis.strengths,
+      missingSkills: aiAnalysis.missingSkills,
+      suggestions: aiAnalysis.suggestions,
+      repoAnalysis: aiAnalysis.repoAnalysis
     });
   } catch (error) {
     console.error('Analysis error:', error.message);

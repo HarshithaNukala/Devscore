@@ -19,13 +19,19 @@ async function fetchGithubData(username) {
     let totalStars = 0;
     const languageCounts = {};
     
-    // We fetch repos, but language stats per repo are just primary language.
-    // GitHub API doesn't give byte breakdown in /repos, so we'll use a simple count of primary languages
-    repos.forEach(repo => {
+    // Extract repositories list with rich metadata for Gemini analysis
+    const repositories = repos.map(repo => {
       totalStars += repo.stargazers_count;
       if (repo.language) {
         languageCounts[repo.language] = (languageCounts[repo.language] || 0) + 1;
       }
+      return {
+        name: repo.name,
+        description: repo.description || 'No description provided',
+        language: repo.language || 'None',
+        stars: repo.stargazers_count,
+        topics: repo.topics || []
+      };
     });
 
     // Calculate language percentages based on count
@@ -44,11 +50,12 @@ async function fetchGithubData(username) {
     return {
       name: profile.name || username,
       avatar_url: profile.avatar_url,
-      bio: profile.bio,
+      bio: profile.bio || 'No bio provided',
       publicRepos: profile.public_repos,
       totalStars,
       languages: languages,
       languagesBreakdown,
+      repositories: repositories.slice(0, 30), // Limit to 30 most active repos to keep prompt size efficient
       lastActivity,
       followers: profile.followers
     };
